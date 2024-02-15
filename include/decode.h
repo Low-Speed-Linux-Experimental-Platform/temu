@@ -1,30 +1,81 @@
 //
-// Created by hanyuan on 2024/2/9.
+// Created by hanyuan on 2023/10/27.
 //
 
 #ifndef TEMU_DECODE_H
 #define TEMU_DECODE_H
-#include <stdint.h>
 
-#define RV32I_LUI                               0x37
-#define RV32I_AUIPC                             0x17
-#define RV32I_JAL                               0x6f
-#define RV32I_JALR                              0x67
-#define RV32I_BRANCH                            0x63
-#define RV32I_LOAD                              0x03
-#define RV32I_STORE                             0x23
-#define RV32I_ARITH_IMM                         0x13
-#define RV32I_ARITH                             0x33
-#define RV32I_ZIFENCEI_FENCE                    0x0f
-#define RV32I_ZICSR_ECALL_EBREAK                0x73
-#define RV32I_ATOMIC                            0x2f
+#include <tuple>
+#include "cpu.h"
 
-#define INST_EXT(end, begin)  extract(inst,begin,end)
-#define INST_DEC(type, ...) decode_type_##type(inst, __VA_ARGS__)
-#define DEC_FUNC(OPCODE) static void decode_func_##OPCODE(uint32_t inst)
-#define DECODE(OPCODE) case RV32I_##OPCODE: decode_func_##OPCODE(inst); break;
-#define SEXT(op, target_idx, source_idx) (((int32_t)(op << (target_idx - source_idx))) >> (target_idx - source_idx))
+enum inst_opcode_rv32i {
+    LUI = 0x37,
+    AUIPC = 0x17,
+    JAL = 0x6f,
+    JALR = 0x67,
+    BRANCH = 0x63,
+    BRANCH_FUNCT_BEQ = 0,
+    BRANCH_FUNCT_BNE = 1,
+    BRANCH_FUNCT_BLT = 4,
+    BRANCH_FUNCT_BGE = 5,
+    BRANCH_FUNCT_BLTU = 6,
+    BRANCH_FUNCT_BGEU = 7,
+    L = 3,
+    L_FUNCT_LB = 0,
+    L_FUNCT_LH = 1,
+    L_FUNCT_LW = 2,
+    L_FUNCT_LBU = 4,
+    L_FUNCT_LHU = 5,
+    S = 0x23,
+    S_FUNCT_SB = 0,
+    S_FUNCT_SH = 1,
+    S_FUNCT_SW = 2,
+    ARITHMETIC_IMMEDIATE = 0x13,
+    ARITH_FUNCT_ADDI = 0,
+    ARITH_FUNCT_SLTI = 2,
+    ARITH_FUNCT_SLTIU = 3,
+    ARITH_FUNCT_XORI = 4,
+    ARITH_FUNCT_ORI = 6,
+    ARITH_FUNCT_ANDI = 7,
+    ARITH_FUNCT_SLLI = 1,
+    ARITH_FUNCT_SRLI_SRAI = 5,
+    ARITHMETIC = 0x33,
+    ARITH_FUNCT_ADD_SUB_MUL = 0,
+    ARITH_FUNCT_SLL_MULH = 1,
+    ARITH_FUNCT_SLT_MULHSU = 2,
+    ARITH_FUNCT_SLTU_MULHU = 3,
+    ARITH_FUNCT_XOR_DIV = 4,
+    ARITH_FUNCT_SRL_SRA_DIVU = 5,
+    ARITH_FUNCT_OR_REM = 6,
+    ARITH_FUNCT_AND_REMU = 7,
+    FENCE_TSO_PAUSE = 0x0f,
+    SYSTEM = 0x73
+};
 
-void decode(uint32_t inst);
+enum inst_opcode_rv64i {
+    L_FUNCT_LWU = 6,
+    L_FUNCt_LD = 3,
+    S_FUNCT_SD = 3,
+    ARITHMETIC_IMMEDIATE_64=0x1b,
+    ARITHMETIC_64=0x3b,
+};
+
+std::tuple<uint8_t, uint8_t, uint8_t,
+        uint8_t, uint8_t, uint8_t> inst_decode_r(uint32_t inst);
+
+std::tuple<uint8_t, uint8_t, uint8_t,
+        uint8_t, int16_t> inst_decode_i(uint32_t inst);
+
+std::tuple<uint8_t, uint8_t, uint8_t,
+        uint8_t, int16_t> inst_decode_s(uint32_t inst);
+
+std::tuple<uint8_t, uint8_t, uint8_t,
+        uint8_t, int16_t> inst_decode_b(uint32_t inst);
+
+std::tuple<uint8_t, uint8_t, uint32_t> inst_decode_u(uint32_t inst);
+
+std::tuple<uint8_t, uint8_t, int32_t> inst_decode_j(uint32_t inst);
+
+int inst_exec(uint32_t inst, cpu *machine);
 
 #endif //TEMU_DECODE_H
